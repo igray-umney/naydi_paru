@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Найди пару</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-item {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .info-item span {
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .level-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .level-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #e0e0e0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .level-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .level-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .animal-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 120px;
+        }
+
+        .animal-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .animal-card.selected {
+            border-color: #667eea;
+            background: #e8eaf6;
+        }
+
+        .animal-card.matched {
+            border-color: #4caf50;
+            background: #e8f5e9;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .animal-card.wrong {
+            animation: shake 0.5s;
+            border-color: #f44336;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .animal-card img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+        }
+
+        .controls {
+            text-align: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .game-over {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        .game-over h2 {
+            color: #4caf50;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .game-board {
+                gap: 15px;
+            }
+            
+            .animal-card img {
+                max-width: 70px;
+                max-height: 70px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🎮 Найди пару 🎮</h1>
+        </div>
+
+        <div class="level-selector">
+            <button class="level-btn active" data-level="1">Легко (3 пары)</button>
+            <button class="level-btn" data-level="2">Средне (6 пар)</button>
+            <button class="level-btn" data-level="3">Сложно (9 пар)</button>
+        </div>
+
+        <div class="game-info">
+            <div class="info-item">
+                Уровень: <span id="level">1</span>
+            </div>
+            <div class="info-item">
+                Время: <span id="timer">0:00</span>
+            </div>
+            <div class="info-item">
+                Пары: <span id="pairs">0/3</span>
+            </div>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="resetGame()">Новая игра</button>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2>🎉 Поздравляем! 🎉</h2>
+            <p id="finalTime"></p>
+            <button class="btn btn-primary" onclick="resetGame()" style="margin-top: 15px;">Играть снова</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // ЗДЕСЬ ВСТАВЬТЕ ССЫЛКИ НА ВАШИ КАРТИНКИ
+        // ============================================
+        // Вариант 1: Загрузите картинки на imgur.com или imgbb.com и вставьте ссылки
+        // Вариант 2: Используйте относительные пути, если файлы в той же папке
+        
+        const animals = {
+            balloon: {
+                shadow: './images/balloon-shadow.png',  // Замените на свой путь
+                color: './images/balloon-color.png'
+            },
+            cake: {
+                shadow: './images/cake-shadow.png',
+                color: './images/cake-color.png'
+            },
+            candy: {
+                shadow: './images/candy-shadow.png',
+                color: './images/candy-color.png'
+            },
+            drop: {
+                shadow: './images/drop-shadow.png',
+                color: './images/drop-color.png'
+            },
+            leopard: {
+                shadow: './images/leopard-shadow.png',
+                color: './images/leopard-color.png'
+            },
+            moon: {
+                shadow: './images/moon-shadow.png',
+                color: './images/moon-color.png'
+            },
+            monkey: {
+                shadow: './images/monkey-shadow.png',
+                color: './images/monkey-color.png'
+            },
+            lion: {
+                shadow: './images/lion-shadow.png',
+                color: './images/lion-color.png'
+            },
+            elephant: {
+                shadow: './images/elephant-shadow.png',
+                color: './images/elephant-color.png'
+            }
+        };
+
+        let currentLevel = 1;
+        let selectedAnimal = null;
+        let matchedPairs = 0;
+        let totalPairs = 3;
+        let timerInterval = null;
+        let seconds = 0;
+        let gameActive = false;
+
+        const levelConfigs = {
+            1: { pairs: 3, animals: ['monkey', 'lion', 'elephant'] },
+            2: { pairs: 6, animals: ['monkey', 'lion', 'elephant', 'leopard', 'balloon', 'cake'] },
+            3: { pairs: 9, animals: ['monkey', 'lion', 'elephant', 'leopard', 'balloon', 'cake', 'candy', 'moon', 'drop'] }
+        };
+
+        function initGame() {
+            const config = levelConfigs[currentLevel];
+            totalPairs = config.pairs;
+            matchedPairs = 0;
+            selectedAnimal = null;
+            seconds = 0;
+            gameActive = true;
+            
+            document.getElementById('level').textContent = currentLevel;
+            document.getElementById('pairs').textContent = `0/${totalPairs}`;
+            document.getElementById('gameOver').classList.remove('show');
+            
+            startTimer();
+            renderBoard(config.animals);
+        }
+
+        function renderBoard(animalList) {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            
+            const colorColumn = document.createElement('div');
+            colorColumn.className = 'column';
+            const shadowColumn = document.createElement('div');
+            shadowColumn.className = 'column';
+            
+            const shuffledColors = [...animalList].sort(() => Math.random() - 0.5);
+            const shuffledShadows = [...animalList].sort(() => Math.random() - 0.5);
+            
+            shuffledColors.forEach(animal => {
+                const card = createCard(animal, 'color');
+                colorColumn.appendChild(card);
+            });
+            
+            shuffledShadows.forEach(animal => {
+                const card = createCard(animal, 'shadow');
+                shadowColumn.appendChild(card);
+            });
+            
+            board.appendChild(colorColumn);
+            board.appendChild(shadowColumn);
+        }
+
+        function createCard(animal, type) {
+            const card = document.createElement('div');
+            card.className = 'animal-card';
+            card.dataset.animal = animal;
+            card.dataset.type = type;
+            
+            const img = document.createElement('img');
+            img.src = animals[animal][type];
+            img.alt = animal;
+            card.appendChild(img);
+            
+            card.onclick = () => selectCard(card);
+            return card;
+        }
+
+        function selectCard(card) {
+            if (!gameActive || card.classList.contains('matched')) return;
+            
+            if (selectedAnimal === null) {
+                selectedAnimal = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedAnimal === card) {
+                    selectedAnimal.classList.remove('selected');
+                    selectedAnimal = null;
+                    return;
+                }
+                
+                if (selectedAnimal.dataset.animal === card.dataset.animal &&
+                    selectedAnimal.dataset.type !== card.dataset.type) {
+                    
+                    selectedAnimal.classList.remove('selected');
+                    selectedAnimal.classList.add('matched');
+                    card.classList.add('matched');
+                    matchedPairs++;
+                    
+                    document.getElementById('pairs').textContent = `${matchedPairs}/${totalPairs}`;
+                    
+                    if (matchedPairs === totalPairs) {
+                        endGame();
+                    }
+                    
+                    selectedAnimal = null;
+                } else {
+                    selectedAnimal.classList.add('wrong');
+                    card.classList.add('wrong');
+                    
+                    setTimeout(() => {
+                        selectedAnimal.classList.remove('selected', 'wrong');
+                        card.classList.remove('wrong');
+                        selectedAnimal = null;
+                    }, 500);
+                }
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            seconds = 0;
+            updateTimer();
+            timerInterval = setInterval(() => {
+                seconds++;
+                updateTimer();
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('timer').textContent = 
+                `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+            
+            document.getElementById('finalTime').textContent = 
+                `Вы прошли уровень ${currentLevel} за ${timeStr}!`;
+            document.getElementById('gameOver').classList.add('show');
+        }
+
+        function resetGame() {
+            if (timerInterval) clearInterval(timerInterval);
+            initGame();
+        }
+
+        document.querySelectorAll('.level-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentLevel = parseInt(this.dataset.level);
+                resetGame();
+            });
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
